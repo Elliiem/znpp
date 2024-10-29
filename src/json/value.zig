@@ -5,6 +5,7 @@ const LabeledError = @import("embedded.zig").LabeledError;
 
 const Pair = @import("common.zig").Pair;
 const ByteArray = @import("common.zig").ByteArray;
+const RustEnum = @import("common.zig").RustEnum;
 const freeAllocated = @import("common.zig").freeAllocated;
 
 test {
@@ -92,72 +93,11 @@ fn rangeContainer(comptime T: RangeType) type {
 }
 
 pub fn Bound(comptime T: RangeType) type {
-    return union(enum) {
+    return RustEnum(union(enum) {
         Included: rangeContainer(T),
         Excluded: rangeContainer(T),
         Unbounded,
-
-        pub fn jsonParse(alloc: std.mem.Allocator, source: anytype, options: std.json.ParseOptions) !@This() {
-            const begin_token = try source.next(); //  TODO: nextAllocMax() ?
-            defer freeAllocated(alloc, begin_token);
-
-            switch (begin_token) {
-                inline .string, .allocated_string => |str| {
-                    if (!std.mem.eql(u8, str, "Unbounded")) {
-                        return error.UnexpectedToken;
-                    }
-
-                    return Bound(T){ .Unbounded = undefined };
-                },
-                .object_begin => {},
-                else => return error.UnexpectedToken,
-            }
-
-            var parsed: Bound(T) = undefined;
-
-            const union_field_name_token = try source.next();
-            defer freeAllocated(alloc, union_field_name_token);
-
-            switch (union_field_name_token) {
-                inline .string, .allocated_string => |str| {
-                    if (std.mem.eql(u8, str, "Included")) {
-                        parsed = Bound(T){ .Included = try std.json.innerParse(rangeContainer(T), alloc, source, options) };
-                    } else if (std.mem.eql(u8, str, "Excluded")) {
-                        parsed = Bound(T){ .Excluded = try std.json.innerParse(rangeContainer(T), alloc, source, options) };
-                    }
-                },
-                else => return error.UnexpectedToken,
-            }
-
-            return switch (try source.next()) {
-                .object_end => parsed,
-                else => |token| blk: {
-                    freeAllocated(alloc, token);
-                    break :blk error.UnexpectedToken;
-                },
-            };
-        }
-
-        pub fn jsonStringify(self: @This(), writer: anytype) !void {
-            switch (self) {
-                .Unbounded => {
-                    try writer.write("Unbounded");
-                },
-                .Included => {
-                    try writer.beginObject();
-                    try writer.objectField("Included");
-                    try writer.write(self.Included);
-                    try writer.endObject();
-                },
-                .Excluded => {
-                    try writer.beginObject();
-                    try writer.objectField("Excluded");
-                    try writer.write(self.Excluded);
-                    try writer.endObject();
-                },
-            }
-        }
-    };
+    });
 }
 
 pub const String = struct {

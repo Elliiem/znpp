@@ -7,11 +7,18 @@ const LabeledError = @import("embedded.zig").LabeledError;
 const Pair = @import("common.zig").Pair;
 const ByteArray = @import("common.zig").ByteArray;
 
-pub const Stream = union(enum) { Data: Pair(i64, Data) };
+const Value = @import("value.zig").Value;
+
+pub const Stream = union(enum) {
+    Data: Pair(i64, Data),
+    End: i64,
+    Ack: i64,
+    Drop: i64,
+};
 
 pub const Data = union(enum) {
     Raw: Raw,
-    List: List,
+    List: Value,
 
     const Raw = union(enum) {
         Ok: ByteArray,
@@ -21,6 +28,4 @@ pub const Data = union(enum) {
     const RawError = union(enum) {
         IOError: LabeledError,
     };
-
-    const List = struct {};
 };

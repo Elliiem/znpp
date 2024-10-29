@@ -1,5 +1,8 @@
 const std = @import("std");
 
+const EmptyList = @import("common.zig").EmptyList;
+const RustEnum = @import("common.zig").RustEnum;
+const Pair = @import("common.zig").Pair;
 const freeAllocated = @import("common.zig").freeAllocated;
 const expectToken = @import("common.zig").expectToken;
 
@@ -191,3 +194,130 @@ pub const Operator = union(enum) {
 };
 
 pub const Config = struct {};
+
+pub const Signature = struct {
+    name: []const u8,
+    description: []const u8,
+    extra_description: []const u8,
+    search_terms: [][]const u8,
+    required_positional: [][]const u8,
+    optional_positional: [][]const u8,
+    rest_positional: [][]const u8,
+    vectorizes_over_list: bool,
+    named: []Flag,
+    input_output_types: []Pair(Type, Type),
+    allow_variants_without_examples: bool,
+    is_filter: bool,
+    creates_scope: bool,
+    allows_unknown_args: bool,
+    category: Category,
+};
+
+pub const Flag = struct {
+    long: []const u8,
+    short: ?u8,
+    arg: ?SyntaxShape,
+    required: bool,
+    desc: []const u8,
+    var_id: ?Id,
+    default_value: ?Value,
+};
+
+pub const Id = struct {};
+
+pub const SyntaxShape = RustEnum(union(enum) {
+    Any,
+    Binary,
+    Block,
+    Boolean,
+    CellPath,
+    Closure: ?[]SyntaxShape,
+    // CompleterWrapper
+    DateTime,
+    Directory,
+    Duration,
+    Error,
+    Expression,
+    ExternalArgument,
+    FilePath,
+    Filesize,
+    Float,
+    FullCellPath,
+    GlobPattern,
+    Int,
+    ImportPattern,
+    // Keyword
+    // List
+    MathExpression,
+    MatchBlock,
+    Nothing,
+    Number,
+    OneOf: []SyntaxShape,
+    Operator,
+    Range,
+    // Record
+    RowCondition,
+    Signature,
+    String,
+    // Table
+    VarWithOptType,
+});
+
+pub const Type = RustEnum(union(enum) {
+    Any,
+    Binary,
+    Block,
+    Bool,
+    CellPath,
+    Closure,
+    // Custom
+    Date,
+    Duration,
+    Error,
+    Filesize,
+    Float,
+    Int,
+    // List
+    ListStream,
+    Nothing,
+    Number,
+    Range,
+    // Record
+    Signature,
+    String,
+    Glob,
+    // Table
+});
+
+pub const Category = RustEnum(union(enum) {
+    Bits,
+    Bytes,
+    Chart,
+    Conversions,
+    Core,
+    Custom: []const u8,
+    Database,
+    Date,
+    Debug,
+    Default,
+    Removed,
+    Env,
+    Experimental,
+    FileSystem,
+    Filters,
+    Formats,
+    Generators,
+    Hash,
+    History,
+    Math,
+    Misc,
+    Network,
+    Path,
+    Platform,
+    Plugin,
+    Random,
+    Shells,
+    Strings,
+    Systems,
+    Viewers,
+});

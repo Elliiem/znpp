@@ -8,7 +8,7 @@ const test_range_0 = Range{
             .start = 0,
             .step = 1,
             .end = .{
-                .Unbounded = undefined,
+                .val = .Unbounded,
             },
         },
     },
@@ -54,7 +54,9 @@ const test_range_1 = Range{
             .start = 7,
             .step = 1,
             .end = .{
-                .Included = 10,
+                .val = .{
+                    .Included = 10,
+                },
             },
         },
     },
@@ -102,7 +104,9 @@ const test_range_2 = Range{
             .start = 7,
             .step = 1,
             .end = .{
-                .Excluded = 10,
+                .val = .{
+                    .Excluded = 10,
+                },
             },
         },
     },
@@ -150,7 +154,9 @@ const test_range_3 = Range{
             .start = 0,
             .step = 64,
             .end = .{
-                .Included = 128,
+                .val = .{
+                    .Included = 128,
+                },
             },
         },
     },

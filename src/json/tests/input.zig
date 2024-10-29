@@ -13,37 +13,39 @@ const EngineCallResponse = @import("../input.zig").EngineCallResponse;
 const test_call_0 = Call{
     .a = 0,
     .b = .{
-        .Run = .{
-            .name = "inc",
-            .call = .{
-                .head = .{ .start = 40400, .end = 40403 },
-                .positional = &[_]Value{
-                    Value{
-                        .String = .{
-                            .val = "0.1.2",
-                            .span = .{
-                                .start = 40407,
-                                .end = 40415,
+        .val = .{
+            .Run = .{
+                .name = "inc",
+                .call = .{
+                    .head = .{ .start = 40400, .end = 40403 },
+                    .positional = &[_]Value{
+                        Value{
+                            .String = .{
+                                .val = "0.1.2",
+                                .span = .{
+                                    .start = 40407,
+                                    .end = 40415,
+                                },
                             },
                         },
                     },
-                },
-                .named = &[_]Pair([]const u8, ?Value){
-                    Pair([]const u8, ?Value){
-                        .a = "major",
-                        .b = Value{
-                            .Bool = .{
-                                .val = true,
-                                .span = .{
-                                    .start = 40404,
-                                    .end = 40406,
+                    .named = &[_]Pair([]const u8, ?Value){
+                        Pair([]const u8, ?Value){
+                            .a = "major",
+                            .b = Value{
+                                .Bool = .{
+                                    .val = true,
+                                    .span = .{
+                                        .start = 40404,
+                                        .end = 40406,
+                                    },
                                 },
                             },
                         },
                     },
                 },
+                .input = .Empty,
             },
-            .input = .Empty,
         },
     },
 };
@@ -108,24 +110,26 @@ test "Stringify Call 0" {
 const test_call_1 = Call{
     .a = 0,
     .b = .{
-        .CustomValueOp = .{
-            .FollowPathInt = .{
-                .val = .{
-                    .item = .{
-                        .name = "version",
-                        .data = .{
-                            .value = &[_]u8{ 0, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0 },
+        .val = .{
+            .CustomValueOp = .{
+                .FollowPathInt = .{
+                    .val = .{
+                        .item = .{
+                            .name = "version",
+                            .data = .{
+                                .value = &[_]u8{ 0, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0 },
+                            },
+                        },
+                        .span = .{
+                            .start = 90,
+                            .end = 96,
                         },
                     },
+                    .item = 0,
                     .span = .{
-                        .start = 90,
-                        .end = 96,
+                        .start = 320,
+                        .end = 321,
                     },
-                },
-                .item = 0,
-                .span = .{
-                    .start = 320,
-                    .end = 321,
                 },
             },
         },
@@ -188,16 +192,23 @@ test "Stringify Call 1" {
     try std.testing.expectEqualStrings(test_call_json_1, json);
 }
 
-const test_response_0 = EngineCallResponse{ .a = 0, .b = .{
-    .Error = .{
-        .msg = "The connection closed.",
-        .labels = &[_]ErrorLabel{},
-        .code = null,
-        .url = null,
-        .help = null,
-        .inner = &[_]LabeledError{},
+const test_response_0 = EngineCallResponse{
+    .a = 0,
+    .b = .{
+        .val = .{
+            .Error = .{
+                .LabeledError = .{
+                    .msg = "The connection closed.",
+                    .labels = &[_]ErrorLabel{},
+                    .code = null,
+                    .url = null,
+                    .help = null,
+                    .inner = &[_]LabeledError{},
+                },
+            },
+        },
     },
-} };
+};
 
 const test_response_json_0 =
     \\[
@@ -234,7 +245,7 @@ test "Stringify CallParameter 0" {
 const test_response_1 = EngineCallResponse{
     .a = 0,
     .b = .{
-        .PipelineHeader = .{
+        .val = .{
             .ListStream = .{
                 .id = 23,
                 .span = .{
