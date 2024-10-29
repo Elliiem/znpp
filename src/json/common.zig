@@ -93,37 +93,6 @@ pub const ByteArray = struct {
     }
 };
 
-pub const EmptyList = struct {
-    pub fn jsonParse(alloc: std.mem.Allocator, source: anytype, options: std.json.ParseOptions) !@This() {
-        _ = alloc;
-        _ = options;
-
-        const begin = try source.next();
-        switch (begin) {
-            .array_begin => {},
-            else => {
-                return error.UnexpectedToken;
-            },
-        }
-        const end = try source.next();
-        switch (end) {
-            .array_end => {},
-            else => {
-                return error.UnexpectedToken;
-            },
-        }
-
-        return .{};
-    }
-
-    pub fn jsonStringify(self: @This(), writer: anytype) !void {
-        _ = self;
-
-        try writer.beginArray();
-        try writer.endArray();
-    }
-};
-
 /// This is kinda a hack, user discression is adviced
 /// This only works with externally tagged serde.rs enums, but this is true for most of nu_protocols enums
 pub fn RustEnum(comptime Union: type) type {
@@ -160,15 +129,12 @@ pub fn RustEnum(comptime Union: type) type {
     });
 
     return struct {
-        const union_type = Union;
-        const void_enum = void_fields_enum;
-
         val: Union,
 
         pub fn jsonParse(alloc: std.mem.Allocator, source: anytype, options: std.json.ParseOptions) !@This() {
             switch (try source.peekNextTokenType()) {
                 .string => {
-                    return .{ .val = convertRustEnumEnumField(Union, try std.json.innerParse(void_fields_enum, alloc, source, options)) catch return error.UnexpectedToken };
+                    return .{ .val = convertEnumField(Union, try std.json.innerParse(void_fields_enum, alloc, source, options)) catch return error.UnexpectedToken };
                 },
                 .object_begin => {
                     return .{ .val = try std.json.innerParse(Union, alloc, source, options) };
@@ -193,7 +159,7 @@ pub fn RustEnum(comptime Union: type) type {
     };
 }
 
-fn convertRustEnumEnumField(comptime target: type, value: anytype) !target {
+fn convertEnumField(comptime target: type, value: anytype) !target {
     switch (@typeInfo(target)) {
         .Union => {},
         else => {

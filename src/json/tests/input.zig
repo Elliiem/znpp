@@ -2,12 +2,11 @@ const std = @import("std");
 
 const Pair = @import("../common.zig").Pair;
 
-const ErrorLabel = @import("../embedded.zig").ErrorLabel;
 const LabeledError = @import("../embedded.zig").LabeledError;
 
 const Value = @import("../value.zig").Value;
 
-const Call = @import("../input.zig").Call;
+const Call = @import("../input.zig").PluginCall;
 const EngineCallResponse = @import("../input.zig").EngineCallResponse;
 
 const test_call_0 = Call{
@@ -44,7 +43,9 @@ const test_call_0 = Call{
                         },
                     },
                 },
-                .input = .Empty,
+                .input = .{
+                    .val = .Empty,
+                },
             },
         },
     },
@@ -199,7 +200,7 @@ const test_response_0 = EngineCallResponse{
             .Error = .{
                 .LabeledError = .{
                     .msg = "The connection closed.",
-                    .labels = &[_]ErrorLabel{},
+                    .labels = &[_]LabeledError.ErrorLabel{},
                     .code = null,
                     .url = null,
                     .help = null,

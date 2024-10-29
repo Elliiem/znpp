@@ -1,10 +1,7 @@
 const std = @import("std");
 
-const EmptyList = @import("common.zig").EmptyList;
 const RustEnum = @import("common.zig").RustEnum;
 const Pair = @import("common.zig").Pair;
-const freeAllocated = @import("common.zig").freeAllocated;
-const expectToken = @import("common.zig").expectToken;
 
 const Value = @import("value.zig").Value;
 
@@ -17,109 +14,10 @@ pub const Span = struct {
     end: i64,
 };
 
-pub const PipelineDataHeader = union(enum) {
-    Empty,
-    Value: Value,
-    ListStream: ListStream,
-    ByteStream: ByteStream,
-
-    pub const ListStream = struct {
-        id: i64,
-        span: Span,
-    };
-
-    pub const ByteStream = struct {
-        id: i64,
-        span: Span,
-        type: []const u8,
-    };
-
-    const PipelineDataHeaderObjectFields = enum {
-        Value,
-        ListStream,
-        ByteStream,
-    };
-
-    pub fn jsonParse(alloc: std.mem.Allocator, source: anytype, options: std.json.ParseOptions) !@This() {
-        switch (try source.peekNextTokenType()) {
-            .string => {
-                const value_token = try source.nextAllocMax(alloc, .alloc_if_needed, options.max_value_len.?);
-                defer freeAllocated(alloc, value_token);
-
-                switch (value_token) {
-                    inline .string, .allocated_string => |str| {
-                        if (!std.mem.eql(u8, str, "Empty")) {
-                            return error.UnexpectedToken;
-                        }
-
-                        return .Empty;
-                    },
-                    else => unreachable,
-                }
-            },
-            .object_begin => {
-                _ = try source.next();
-
-                const union_field_token = try source.nextAllocMax(alloc, .alloc_if_needed, options.max_value_len.?);
-                defer freeAllocated(alloc, union_field_token);
-
-                const field = switch (union_field_token) {
-                    inline .string, .allocated_string => |str| std.meta.stringToEnum(PipelineDataHeaderObjectFields, str) orelse return error.InvalidEnumTag,
-                    else => {
-                        return error.UnexpectedToken;
-                    },
-                };
-
-                const parsed = switch (field) {
-                    .Value => return .{ .Value = try std.json.innerParse(Value, alloc, source, options) },
-                    .ListStream => return .{ .ListStream = try std.json.innerParse(ListStream, alloc, source, options) },
-                    .ByteStream => return .{ .ByteStream = try std.json.innerParse(ByteStream, alloc, source, options) },
-                };
-
-                try expectToken(try source.next(), .object_end);
-
-                return parsed;
-            },
-            else => {
-                return error.UnexpectedToken;
-            },
-        }
-
-        unreachable;
-    }
-
-    pub fn jsonStringify(self: @This(), writer: anytype) !void {
-        switch (self) {
-            .Empty => {
-                try writer.write("Empty");
-            },
-            else => {
-                try writer.beginObject();
-
-                switch (self) {
-                    .Value => {
-                        try writer.objectField("Value");
-                        try writer.write(self.Value);
-                    },
-                    .ListStream => {
-                        try writer.objectField("ListStream");
-                        try writer.write(self.ListStream);
-                    },
-                    .ByteStream => {
-                        try writer.objectField("ByteStream");
-                        try writer.write(self.ByteStream);
-                    },
-                    else => unreachable,
-                }
-
-                try writer.endObject();
-            },
-        }
-    }
-};
-
-pub const ErrorLabel = struct {
-    text: []const u8,
+pub const EvaluatedCall = struct {
+    head: Span,
+    positional: []const Value,
+    named: []const Pair([]const u8, ?Value),
 };
 
 pub const LabeledError = struct {
@@ -129,6 +27,10 @@ pub const LabeledError = struct {
     url: ?[]const u8,
     help: ?[]const u8,
     inner: ?[]const LabeledError,
+
+    pub const ErrorLabel = struct {
+        text: []const u8,
+    };
 };
 
 pub const Ordering = enum {
@@ -138,6 +40,11 @@ pub const Ordering = enum {
 };
 
 pub const Operator = union(enum) {
+    Comparison: Comparison,
+    Math: Math,
+    Bits: Bits,
+    Assignment: Assignment,
+
     pub const Comparison = enum {
         Equal,
         NotEqual,
@@ -186,13 +93,9 @@ pub const Operator = union(enum) {
         MultiplyAssign,
         DivideAssign,
     };
-
-    Comparison: Comparison,
-    Math: Math,
-    Bits: Bits,
-    Assignment: Assignment,
 };
 
+//  TODO: Implement
 pub const Config = struct {};
 
 pub const Signature = struct {
@@ -223,6 +126,7 @@ pub const Flag = struct {
     default_value: ?Value,
 };
 
+//  TODO: Implement
 pub const Id = struct {};
 
 pub const SyntaxShape = RustEnum(union(enum) {

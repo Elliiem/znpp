@@ -3,7 +3,7 @@
 const std = @import("std");
 
 const Span = @import("embedded.zig").Span;
-const PipelineDataHeader = @import("embedded.zig").PipelineDataHeader;
+const EvaluatedCall = @import("embedded.zig").EvaluatedCall;
 
 const Operator = @import("embedded.zig").Operator;
 const LabeledError = @import("embedded.zig").LabeledError;
@@ -17,15 +17,19 @@ const RustEnum = @import("common.zig").RustEnum;
 const Value = @import("value.zig").Value;
 const Record = @import("value.zig").Record;
 
+const PipelineDataHeader = @import("stream.zig").PipelineDataHeader;
+const ListStream = @import("stream.zig").ListStream;
+const ByteStream = @import("stream.zig").ByteStream;
+
 pub const Input = RustEnum(union(enum) {
-    Call: Call,
+    Call: PluginCall,
     EngineCallResponse: EngineCallResponse,
     Goodbye,
 });
 
-pub const Call = Pair(i64, CallParameter);
+pub const PluginCall = Pair(i64, PluginCallParam);
 
-pub const CallParameter = RustEnum(union(enum) {
+pub const PluginCallParam = RustEnum(union(enum) {
     Metadata,
     Signature,
     Run: Run,
@@ -45,6 +49,16 @@ pub const CustomValueOp = union(enum) {
     PartialCmp: PartialCmp,
     Operation: Operation,
     Dropped: InputCustom,
+
+    const InputCustomInner = struct {
+        name: []const u8,
+        data: ByteArray,
+    };
+
+    pub const InputCustom = struct {
+        item: InputCustomInner,
+        span: Span,
+    };
 
     pub const FollowPathInt = struct {
         val: InputCustom,
@@ -209,29 +223,13 @@ pub const CustomValueOp = union(enum) {
     }
 };
 
-const InputCustomInner = struct {
-    name: []const u8,
-    data: ByteArray,
-};
+pub const EngineCallResponse = Pair(i64, EngineCallResponseParam);
 
-pub const InputCustom = struct {
-    item: InputCustomInner,
-    span: Span,
-};
-
-pub const EvaluatedCall = struct {
-    head: Span,
-    positional: []const Value,
-    named: []const Pair([]const u8, ?Value),
-};
-
-pub const EngineCallResponse = Pair(i64, EngineCallResponseParameter);
-
-const EngineCallResponseParameter = RustEnum(union(enum) {
+const EngineCallResponseParam = RustEnum(union(enum) {
     Error: union(enum) { LabeledError: LabeledError },
     Value: Value,
-    ListStream: PipelineDataHeader.ListStream,
-    ByteStream: PipelineDataHeader.ByteStream,
+    ListStream: ListStream,
+    ByteStream: ByteStream,
     Config: Config,
     ValueMap: Record,
     Identifier: i64,
